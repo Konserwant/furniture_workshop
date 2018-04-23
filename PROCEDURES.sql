@@ -1,5 +1,5 @@
 CREATE OR REPLACE PROCEDURE GENERATE_ORDERS
-    (QUANTITY IN INTEGER)
+    (QUANTITY IN INTEGER, ID_CO IN INTEGER, ID_KTO IN INTEGER)
 IS
     RAND_A NUMBER;
     RAND_B NUMBER;
@@ -18,10 +18,15 @@ BEGIN
         INSERT INTO ORDERS
         (A,
         B,
+        ID_CLIENT,
+        ID_PLATE,
         STATUS)
         VALUES
         (RAND_A,
         RAND_B,
+        ID_KTO,
+        ID_CO,
         'WAITING');
     END LOOP;
 END;
+

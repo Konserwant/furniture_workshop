@@ -24,4 +24,6 @@ create sequence orders_seq;
 alter table orders add constraint platefk foreign key(id_plate) references materials(id_plate);
 alter table orders add constraint clientfk foreign key(id_client) references clients(id_client);
 alter table orders add status varchar2(20);
+alter table materials add price_m2 number;
+alter table orders add price number;
 commit;
