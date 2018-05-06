@@ -10,23 +10,25 @@ BEGIN
     LOOP
         RAND_A := (DBMS_RANDOM.VALUE (200,10000));
         RAND_B := (DBMS_RANDOM.VALUE (200,20000));
- --       IF (RAND_A > RAND_B) THEN
- --           TEMP :=RAND_B;
- --           RAND_B :=RAND_A;
- --           RAND_A :=TEMP;
- --       END IF;
+        IF (RAND_A > RAND_B) THEN
+           TEMP :=RAND_B;
+           RAND_B :=RAND_A;
+           RAND_A :=TEMP;
+        END IF;
         INSERT INTO ORDERS
-        (A,
-        B,
-        ID_CLIENT,
-        ID_PLATE,
-        STATUS)
-        VALUES
-        (RAND_A,
-        RAND_B,
-        ID_KTO,
-        ID_CO,
-        'WAITING');
+        (
+            A,
+            B,
+            ID_CLIENT,
+            ID_PLATE,
+            STATUS)
+            VALUES
+            (RAND_A,
+            RAND_B,
+            ID_KTO,
+            ID_CO,
+            'WAITING'
+        );
     END LOOP;
 END;
 

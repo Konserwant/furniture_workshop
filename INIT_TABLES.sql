@@ -1,29 +1,44 @@
-create table materials(id_plate int primary key,
-a int, 
-b int,
-material varchar2(20));
-create sequence materials_seq;
-commit;
-
-create table clients(id_client int primary key, 
-first_name varchar2(20), 
-surname varchar2(20));
-create sequence clients_seq;
-
-commit;
-
-create table orders(
-id_order int primary key, 
-id_client int,
-a int, 
-b int,
-id_plate int
+CREATE TABLE materials
+(
+    id_material INT PRIMARY KEY,
+    material VARCHAR2(20),
+    thickness NUMBER,
+    price_m2 NUMBER
 );
+CREATE SEQUENCE materials_seq;
+COMMIT;
 
-create sequence orders_seq;
-alter table orders add constraint platefk foreign key(id_plate) references materials(id_plate);
-alter table orders add constraint clientfk foreign key(id_client) references clients(id_client);
-alter table orders add status varchar2(20);
-alter table materials add price_m2 number;
-alter table orders add price number;
-commit;
+CREATE TABLE clients
+(
+    id_client INT PRIMARY KEY, 
+    first_name VARCHAR2(20), 
+    surname VARCHAR2(20)
+);
+CREATE SEQUENCE clients_seq;
+COMMIT;
+
+CREATE TABLE orders
+(
+    id_order INT PRIMARY KEY, 
+    id_client INT,
+    A INT, 
+    b INT,
+    id_plate INT,
+    status VARCHAR2(20) CHECK( status IN ('waiting','done')),
+    COST NUMBER
+);
+CREATE SEQUENCE orders_seq;
+ALTER TABLE orders ADD CONSTRAINT platefk FOREIGN KEY(id_plate) REFERENCES plates(id_plate);
+ALTER TABLE orders ADD CONSTRAINT clientfk FOREIGN KEY(id_client) REFERENCES clients(id_client);
+COMMIT;
+
+CREATE TABLE plates
+(
+    id_plate INT PRIMARY KEY,
+    A INT,
+    b INT,
+    id_material INT
+);
+CREATE SEQUENCE plates_seq;
+ALTER TABLE plates ADD CONSTRAINT materialfk FOREIGN KEY(id_material) REFERENCES materials(id_material);
+COMMIT;
