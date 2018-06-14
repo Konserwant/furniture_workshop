@@ -32,40 +32,84 @@ END;
 
 -- ORDERS TABLE TRIGGERS
 
-CREATE OR REPLACE TRIGGER orders
-BEFORE INSERT ON orders
-FOR EACH ROW
-BEGIN
-    :NEW.id_order :=orders_seq.NEXTVAL;
-END;
+create or replace TRIGGER orders 
+BEFORE INSERT ON orders 
+FOR EACH ROW 
+DECLARE TEMP NUMBER;
+BEGIN 
+    :NEW.id_order :=orders_seq.NEXTVAL; 
+    IF :NEW.A > :NEW.B
+    THEN
+        TEMP:=:NEW.B;
+        :NEW.B:=:NEW.A;
+        :NEW.A:=TEMP;
+    END IF;
+    :NEW.STATUS:='waiting';
+END; 
 /
 
-CREATE OR REPLACE TRIGGER orders_send
-AFTER INSERT ON orders
+create or replace TRIGGER ORDERS_SEND
+BEFORE INSERT ON ORDERS
 FOR EACH ROW
 DECLARE
-  orders_number  NUMBER;
+  ORDERS_NUMBER  NUMBER;
+  MOTHER_ORDER NUMBER;
+  A_FROM_ORDERS  NUMBER;
+  B_FROM_ORDERS NUMBER;
+  ORDER_MATERIAL NUMBER;
+  A_FROM_PLATES  NUMBER;
+  B_FROM_PLATES NUMBER;
+  ID_FROM_PLATES NUMBER;
+  SIZE_A_FIRST_ADD NUMBER;
+  SIZE_B_FIRST_ADD NUMBER;
+  SIZE_A_SEC_ADD NUMBER;
+  SIZE_B_SEC_ADD NUMBER;
 BEGIN
-    SELECT COUNT(*) INTO orders_number FROM orders;
+    SELECT COUNT(*) INTO ORDERS_NUMBER FROM ORDERS WHERE STATUS='waiting'; 
+  IF(ORDERS_NUMBER>2) THEN
+    for iterator in 1..3 LOOP
+    A_FROM_ORDERS:=1;
+    B_FROM_ORDERS:=1;
+    SELECT MIN(ID_ORDER) INTO MOTHER_ORDER FROM ORDERS WHERE STATUS='waiting';
+    SELECT A, B, ID_MATERIAL INTO A_FROM_ORDERS, B_FROM_ORDERS, ORDER_MATERIAL FROM ORDERS WHERE ORDERS.ID_ORDER=MOTHER_ORDER;
+
     
-    IF(orders_number>10) THEN
-    dbms_output.put_line('10 ORDERS -> PROCESS');
+    /*find plate in plates greater than ordered plate*/
+    
+    SELECT ID_PLATE INTO ID_FROM_PLATES FROM 
+    ( SELECT A,B,ID_MATERIAL,ID_PLATE,STATUS FROM PLATES ORDER BY A*B ASC) Plyty
+    WHERE Plyty.STATUS='free' AND Plyty.ID_MATERIAL=ORDER_MATERIAL AND Plyty.A > A_FROM_ORDERS AND Plyty.B > B_FROM_ORDERS AND ROWNUM = 1;
+    
+
+    SELECT A, B INTO A_FROM_PLATES,B_FROM_PLATES FROM PLATES WHERE PLATES.ID_PLATE=ID_FROM_PLATES;
+
+    /* split plate into three parts */
+    UPDATE PLATES SET A=A_FROM_ORDERS, B=B_FROM_ORDERS, STATUS='used' WHERE PLATES.ID_PLATE = ID_FROM_PLATES;
+    UPDATE ORDERS SET ID_PLATE=ID_FROM_PLATES, STATUS='done'  WHERE ORDERS.ID_ORDER = MOTHER_ORDER;
+    /*2 plyta*/
+    SIZE_A_FIRST_ADD:=A_FROM_PLATES-A_FROM_ORDERS;
+    SIZE_B_FIRST_ADD:=B_FROM_PLATES;
+    insert  into PLATES (a,b,status,id_material) values (SIZE_A_FIRST_ADD,SIZE_B_FIRST_ADD,'free',ORDER_MATERIAL);
+
+    /*3rd plate*/
+    SIZE_A_SEC_ADD:=A_FROM_ORDERS;
+    SIZE_B_SEC_ADD:=B_FROM_PLATES-B_FROM_ORDERS;
+    insert  into PLATES (a,b,status,id_material) values (SIZE_A_SEC_ADD,SIZE_B_SEC_ADD,'free',ORDER_MATERIAL);
+    end loop;
+
+    ORDERS_NUMBER:=0;
     END IF;
 END;
-
 /
 
-CREATE OR REPLACE TRIGGER orders_price
-BEFORE INSERT ON orders
-FOR EACH ROW
-DECLARE
-  price_m2_  NUMBER;
-  material NUMBER;
-BEGIN
-    SELECT id_material INTO material FROM plates WHERE plates.id_plate = :NEW.id_plate;
-    SELECT price_m2 INTO price_m2_ FROM materials WHERE materials.id_material = material;
-    :NEW.cost := round(:NEW.A/1000 * :NEW.b/1000 * price_m2_ , 2);
-END;
-
+create or replace TRIGGER orders_price 
+BEFORE INSERT ON orders 
+FOR EACH ROW 
+DECLARE 
+  price_m2_  NUMBER(2); 
+BEGIN 
+    SELECT price_m2 INTO price_m2_ FROM materials WHERE materials.id_material = :NEW.id_material; 
+    :NEW.cost := CEIL(:NEW.A/1000 * :NEW.b/1000 * price_m2_); 
+END; 
 /
 
